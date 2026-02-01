@@ -6,9 +6,16 @@ function App() {
   const [isConnected, setIsConnected] = useState<boolean>(false);
 
   const setupWrapper = () => {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error("Supabase credentials not found in environment");
+    }
+
     const supabaseWrapper = PWASupabaseWrapper.getInstance({
-      url: "https://your-supabase-url.supabase.co",
-      anonKey: "your-anon-key",
+      url: supabaseUrl,
+      anonKey: supabaseAnonKey,
     });
 
     if (supabaseWrapper) {
