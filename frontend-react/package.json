@@ -13,9 +13,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "pwa-supabase-wrapper": "^1.0.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "pwa-supabase-wrapper": "^1.0.0"
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
     "@types/node": "^24.6.0",
@@ -24,6 +24,7 @@
     "@vitejs/plugin-react": "^5.0.4",
     "sass-embedded": "^1.97.1",
     "typescript": "~5.9.3",
-    "vite": "^7.1.7"
+    "vite": "^7.1.7",
+    "vite-plugin-pwa": "^1.2.0"
   }
 }
