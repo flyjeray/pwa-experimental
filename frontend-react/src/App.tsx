@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { PWASupabaseWrapper } from "pwa-supabase-wrapper";
-import { Button } from "./components/button";
+import { Button } from "~/components/ui/button";
 
 function App() {
   const [wrapper, setWrapper] = useState<PWASupabaseWrapper | null>(null);
