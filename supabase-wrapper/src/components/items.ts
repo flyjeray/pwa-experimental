@@ -1,57 +1,22 @@
 import { SupabaseClient } from "@supabase/supabase-js";
-
-export type AddItemEntryPayload = {
-  title: string;
-  description: string | null;
-  is_completed: boolean;
-  owner_id: string;
-};
-
-export type ItemEntry = AddItemEntryPayload & {
-  id: string;
-  created_at: string;
-  updated_at: string;
-  owner_id: string;
-};
+import { Database } from "pwa-supabase-types";
 
 export class PWASupabaseItemsDB {
-  private client: SupabaseClient;
+  private client: SupabaseClient<Database>;
 
-  constructor(client: SupabaseClient) {
+  constructor(client: SupabaseClient<Database>) {
     this.client = client;
   }
 
-  async storeItem(item: AddItemEntryPayload) {
-    const { data, error } = await this.client.from("items").insert({ ...item });
-
-    if (error) {
-      throw new Error(`Failed to store item: ${error.message}`);
-    }
-
-    return data;
+  async storeItem(item: Database["public"]["Tables"]["items"]["Insert"]) {
+    return this.client.from("items").insert({ ...item });
   }
 
-  async getAllItems(): Promise<ItemEntry[]> {
-    const { data, error } = await this.client.from("items").select("item");
-
-    if (error) {
-      throw new Error(`Failed to retrieve items: ${error.message}`);
-    }
-
-    return data ? data.map((row) => row.item) : [];
+  async getAllItems() {
+    return this.client.from("items").select("*");
   }
 
-  async getItem(id: string): Promise<ItemEntry | null> {
-    const { data, error } = await this.client
-      .from("items")
-      .select("item")
-      .eq("id", id)
-      .single();
-
-    if (error) {
-      throw new Error(`Failed to retrieve item: ${error.message}`);
-    }
-
-    return data ? data.item : null;
+  async getItem(id: number) {
+    return this.client.from("items").select("*").eq("id", id).single();
   }
 }

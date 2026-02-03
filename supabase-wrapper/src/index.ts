@@ -1,6 +1,7 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { PWASupabaseAuth } from "./components/auth";
 import { PWASupabaseItemsDB } from "./components/items";
+import type { Database } from "pwa-supabase-types";
 
 export interface SupabaseConfig {
   url: string;
@@ -13,12 +14,12 @@ type SupabaseDB = {
 
 export class PWASupabaseWrapper {
   private static instance: PWASupabaseWrapper | null = null;
-  private client: SupabaseClient;
+  private client: SupabaseClient<Database>;
   public auth: PWASupabaseAuth;
   public db: SupabaseDB;
 
   private constructor(config: SupabaseConfig) {
-    this.client = createClient(config.url, config.anonKey);
+    this.client = createClient<Database>(config.url, config.anonKey);
     this.auth = new PWASupabaseAuth(this.client);
     this.db = {
       items: new PWASupabaseItemsDB(this.client),
