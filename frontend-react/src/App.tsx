@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { PWASupabaseWrapper } from "pwa-supabase-wrapper";
+import { Button } from "./components/button";
 
 function App() {
   const [wrapper, setWrapper] = useState<PWASupabaseWrapper | null>(null);
@@ -85,9 +86,9 @@ function App() {
             />
           </label>
         </div>
-        <button type="submit" disabled={isLoading || !wrapper}>
+        <Button type="submit" disabled={isLoading || !wrapper}>
           {isLoading ? "Signing in..." : "Sign in"}
-        </button>
+        </Button>
       </form>
 
       {error && <p style={{ color: "red" }}>{error}</p>}
