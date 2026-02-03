@@ -48,8 +48,12 @@ export const ItemsTable = () => {
               {!isLoading &&
                 data.map((item) => (
                   <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.title}</TableCell>
-                    <TableCell>{item.description || "-"}</TableCell>
+                    <TableCell className="font-medium max-w-[200px] truncate">
+                      {item.title}
+                    </TableCell>
+                    <TableCell className="max-w-[280px] truncate">
+                      {item.description || "-"}
+                    </TableCell>
                     <TableCell className="text-right">
                       {item.is_completed ? "Yes" : "No"}
                     </TableCell>
