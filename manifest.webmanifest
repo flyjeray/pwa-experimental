@@ -1,1 +1,16 @@
-{"name":"pwa-frontend","short_name":"PWA Guide","start_url":"/pwa-experimental/","display":"standalone","background_color":"#ffffff","theme_color":"#000000","lang":"en","scope":"/pwa-experimental/","icons":[]}
+{
+  "name": "PWA",
+  "short_name": "PWA",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,1 +1,118 @@
-if(!self.define){let e,i={};const s=(s,n)=>(s=new URL(s+".js",n).href,i[s]||new Promise(i=>{if("document"in self){const e=document.createElement("script");e.src=s,e.onload=i,document.head.appendChild(e)}else e=s,importScripts(s),i()}).then(()=>{let e=i[s];if(!e)throw new Error(`Module ${s} didn’t register its module`);return e}));self.define=(n,t)=>{const r=e||("document"in self?document.currentScript.src:"")||location.href;if(i[r])return;let f={};const o=e=>s(e,r),c={module:{uri:r},exports:f,require:o};i[r]=Promise.all(n.map(e=>c[e]||o(e))).then(e=>(t(...e),f))}}define(["./workbox-e6b563db"],function(e){"use strict";self.addEventListener("message",e=>{e.data&&"SKIP_WAITING"===e.data.type&&self.skipWaiting()}),e.precacheAndRoute([{url:"registerSW.js",revision:"1c047b5304987f66150a0454367cef72"},{url:"manifest.webmanifest",revision:"63f646ccfd3b1418499f701c6b3c595f"},{url:"index.html",revision:"333365087858adf38ac72f52039f5d4d"},{url:"assets/index-zDdiepeK.js",revision:null},{url:"manifest.webmanifest",revision:"63f646ccfd3b1418499f701c6b3c595f"}],{}),e.cleanupOutdatedCaches(),e.registerRoute(new e.NavigationRoute(e.createHandlerBoundToURL("index.html")))});
+// Cache version for global invalidation
+const CACHE_VERSION = "v1";
+
+const STATIC_CACHE = `static-${CACHE_VERSION}`;
+const HTML_CACHE = `html-${CACHE_VERSION}`;
+const IMAGE_CACHE = `images-${CACHE_VERSION}`;
+
+// Resolve the app base path from the service worker scope
+const BASE_PATH = new URL(self.registration.scope).pathname;
+
+// INSTALL event fires when the SW is first registered or updated
+self.addEventListener("install", (event) => {
+  self.skipWaiting();
+
+  event.waitUntil(
+    caches
+      .open(STATIC_CACHE)
+      .then((cache) =>
+        cache.addAll([
+          BASE_PATH,
+          `${BASE_PATH}index.html`,
+          `${BASE_PATH}manifest.webmanifest`,
+        ])
+      )
+  );
+});
+
+// ACTIVATE event fires after install and when old SWs are replaced
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter(
+              (key) => ![STATIC_CACHE, HTML_CACHE, IMAGE_CACHE].includes(key)
+            )
+            .map((key) => caches.delete(key))
+        )
+      )
+      .then(() => self.clients.claim())
+  );
+});
+
+// FETCH event intercepts every network request from controlled pages
+self.addEventListener("fetch", (event) => {
+  const { request } = event;
+
+  if (
+    request.method !== "GET" ||
+    new URL(request.url).origin !== self.location.origin
+  ) {
+    return;
+  }
+
+  if (request.mode === "navigate") {
+    event.respondWith(networkFirst(request, HTML_CACHE));
+    return;
+  }
+
+  if (request.destination === "script" || request.destination === "style") {
+    event.respondWith(staleWhileRevalidate(request, STATIC_CACHE));
+    return;
+  }
+
+  if (request.destination === "image") {
+    event.respondWith(cacheFirst(request, IMAGE_CACHE));
+    return;
+  }
+});
+
+// Network-first strategy ensures fresh HTML when online
+async function networkFirst(request, cacheName) {
+  try {
+    const response = await fetch(request);
+
+    if (response && response.status === 200) {
+      const cache = await caches.open(cacheName);
+      cache.put(request, response.clone());
+    }
+
+    return response;
+  } catch {
+    return caches.match(request);
+  }
+}
+
+// Stale-while-revalidate serves cache immediately and refreshes in background
+async function staleWhileRevalidate(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(request);
+
+  const fetchPromise = fetch(request).then((response) => {
+    if (response && response.status === 200) {
+      cache.put(request, response.clone());
+    }
+    return response;
+  });
+
+  return cached || fetchPromise;
+}
+
+// Cache-first prioritizes speed for rarely changing assets
+async function cacheFirst(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(request);
+
+  if (cached) return cached;
+
+  const response = await fetch(request);
+
+  if (response && response.status === 200) {
+    cache.put(request, response.clone());
+  }
+
+  return response;
+}
