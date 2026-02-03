@@ -2,6 +2,7 @@ import type { Database } from "pwa-supabase-types";
 import type { PWASupabaseWrapper } from "pwa-supabase-wrapper";
 import { useEffect, useState } from "react";
 import { useSupabase } from "~/supabase/hooks";
+import { useOnlineStatus } from "./useOnlineStatus";
 
 type ItemRow = Database["public"]["Tables"]["items"]["Row"];
 
@@ -36,9 +37,10 @@ const getItemsFromNetwork = async (
 };
 
 const getItemsWithFallback = async (
-  wrapper: PWASupabaseWrapper
+  wrapper: PWASupabaseWrapper,
+  isOnline: boolean
 ): Promise<{ items: ItemRow[]; error: unknown | null }> => {
-  if (!navigator.onLine) {
+  if (!isOnline) {
     return { items: loadCachedItems(), error: null };
   }
 
@@ -55,6 +57,7 @@ export const useItems = () => {
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [items, setItems] = useState<ItemRow[]>(() => loadCachedItems());
+  const isOnline = useOnlineStatus();
 
   const fetchItems = async () => {
     if (!wrapper) {
@@ -63,7 +66,10 @@ export const useItems = () => {
     }
 
     setIsLoading(true);
-    const { items: nextItems, error } = await getItemsWithFallback(wrapper);
+    const { items: nextItems, error } = await getItemsWithFallback(
+      wrapper,
+      isOnline
+    );
     setItems(nextItems);
     setIsLoading(false);
 
@@ -90,7 +96,7 @@ export const useItems = () => {
 
   useEffect(() => {
     fetchItems();
-  }, [wrapper, user]);
+  }, [wrapper, user, isOnline]);
 
   return { data: items, refetch: fetchItems, isLoading };
 };
