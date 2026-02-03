@@ -14,7 +14,11 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "clean": "npm run clean --workspaces --if-present && rm -rf node_modules",
-    "prepare": "husky"
+    "prepare": "husky",
+    "db:pull": "cd supabase && supabase db pull",
+    "db:push": "cd supabase && supabase db push",
+    "gen:types": "cd supabase && supabase gen types typescript --linked > database.types.ts",
+    "migration": "cd supabase && supabase migration new"
   },
   "workspaces": [
     "frontend-react",
