@@ -5,10 +5,12 @@ import {
   ItemDescription,
   ItemContent,
 } from "~/components/ui/item";
+import { useOnlineStatus } from "~/hooks/useOnlineStatus";
 import { useSupabase } from "~/supabase/hooks";
 
 export const SystemState = () => {
   const { wrapper, user } = useSupabase();
+  const isOnline = useOnlineStatus();
 
   return (
     <Card>
@@ -19,9 +21,7 @@ export const SystemState = () => {
         <Item variant="outline">
           <ItemContent>
             <ItemTitle>Network Status</ItemTitle>
-            <ItemDescription>
-              {window.navigator.onLine ? "Online" : "Offline"}
-            </ItemDescription>
+            <ItemDescription>{isOnline ? "Online" : "Offline"}</ItemDescription>
           </ItemContent>
         </Item>
         <Item variant="outline">
