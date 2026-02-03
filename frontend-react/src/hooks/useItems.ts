@@ -60,6 +60,8 @@ export const useItems = () => {
   const isOnline = useOnlineStatus();
 
   const fetchItems = async () => {
+    if (!user) return;
+
     if (!wrapper) {
       setItems(loadCachedItems());
       return;
@@ -85,6 +87,7 @@ export const useItems = () => {
       data: { subscription },
     } = wrapper.getClient().auth.onAuthStateChange(async (event, session) => {
       if (!session?.user && event !== "INITIAL_SESSION") {
+        setItems([]);
         window.localStorage.removeItem(ITEMS_CACHE_KEY);
       }
     });
@@ -92,7 +95,7 @@ export const useItems = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [wrapper]);
+  }, [wrapper, user]);
 
   useEffect(() => {
     fetchItems();

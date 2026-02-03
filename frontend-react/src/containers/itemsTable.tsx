@@ -22,11 +22,13 @@ export const ItemsTable = () => {
         <CardContent>
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableCell>Title</TableCell>
-                <TableCell>Description</TableCell>
-                <TableCell className="text-right">Completed</TableCell>
-              </TableRow>
+              {(isLoading || (!isLoading && data.length > 0)) && (
+                <TableRow>
+                  <TableCell>Title</TableCell>
+                  <TableCell>Description</TableCell>
+                  <TableCell className="text-right">Completed</TableCell>
+                </TableRow>
+              )}
             </TableHeader>
 
             <TableBody>
@@ -59,6 +61,14 @@ export const ItemsTable = () => {
                     </TableCell>
                   </TableRow>
                 ))}
+
+              {!isLoading && data.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center">
+                    No items found.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
