@@ -16,7 +16,7 @@ export class PWASupabaseItemsDB {
     return this.client.from("items").select("*");
   }
 
-  async getItem(id: number) {
+  async getItem(id: string) {
     return this.client.from("items").select("*").eq("id", id).single();
   }
 }
