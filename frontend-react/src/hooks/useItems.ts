@@ -1,5 +1,5 @@
 import type { PWASupabaseWrapper } from "pwa-supabase-wrapper";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSupabase } from "~/supabase/hooks";
 import { useOnlineStatus } from "./useOnlineStatus";
 import type {
@@ -61,7 +61,6 @@ export const useItems = () => {
     loadCachedItems()
   );
   const isOnline = useOnlineStatus();
-  const hasInitializedRef = useRef(false);
 
   const fetchItems = async () => {
     if (!user) return;
@@ -78,7 +77,6 @@ export const useItems = () => {
     );
     setItems(nextItems);
     setIsLoading(false);
-    hasInitializedRef.current = true;
 
     if (error) {
       throw error;
@@ -145,7 +143,6 @@ export const useItems = () => {
   }, [wrapper, user]);
 
   useEffect(() => {
-    if (hasInitializedRef.current) return;
     fetchItems();
   }, [wrapper?.db, user?.email, isOnline]);
 
