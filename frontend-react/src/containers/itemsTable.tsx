@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
+import { UpdateConflictDialog } from "~/components/updateConflictDialog";
 import { useItems } from "~/hooks/useItems";
 import { useApplyOperationQueue } from "~/hooks/useOperationQueue";
 import { shortenID } from "~/lib/shortenID";
@@ -20,8 +21,9 @@ import { shortenID } from "~/lib/shortenID";
 export const ItemsTable = () => {
   const { data, isLoading, add, update, delete: deleteItem } = useItems();
 
-  useApplyOperationQueue({
+  const { updateConflict } = useApplyOperationQueue({
     onAdd: add,
+    onUpdate: update,
   });
 
   const copyID = (id: string) => {
@@ -35,6 +37,8 @@ export const ItemsTable = () => {
 
   return (
     <div className={"flex flex-col gap-6"}>
+      {updateConflict && <UpdateConflictDialog conflict={updateConflict} />}
+
       <Card>
         <CardHeader className="flex justify-between">
           <CardTitle>Your items</CardTitle>

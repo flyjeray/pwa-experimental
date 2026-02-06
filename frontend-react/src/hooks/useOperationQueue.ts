@@ -1,8 +1,12 @@
-import type { DatabaseItemEditableFields } from "pwa-supabase-wrapper/dist/components/items";
-import { useEffect } from "react";
+import type {
+  DatabaseItemEditableFields,
+  DatabaseItemRow,
+} from "pwa-supabase-wrapper/dist/components/items";
+import { useEffect, useRef, useState } from "react";
 import { useOnlineStatus } from "./useOnlineStatus";
 import { toast } from "sonner";
 import { useSupabase } from "~/supabase/hooks";
+import type { PWASupabaseWrapper } from "pwa-supabase-wrapper";
 
 type LocalCreateOperation = {
   type: "create";
@@ -27,15 +31,6 @@ type LocalOperation =
   | LocalCreateOperation
   | LocalUpdateOperation
   | LocalDeleteOperation;
-
-type Props = {
-  onAdd?: (fields: DatabaseItemEditableFields) => Promise<void>;
-  onUpdate?: (
-    id: string,
-    fields: Partial<DatabaseItemEditableFields>
-  ) => Promise<void>;
-  onDelete?: (id: string) => Promise<void>;
-};
 
 const getQueueFromStorage = (): LocalOperation[] => {
   if (typeof window === "undefined") return [];
@@ -111,38 +106,169 @@ export const useEditOperationQueue = () => {
   };
 };
 
-const applyQueue = async ({ onAdd }: Props) => {
-  const queue = [...getQueueFromStorage()].sort((a, b) => a.time - b.time);
-  const remaining: LocalOperation[] = [];
+export type UpdateConflict = {
+  old: DatabaseItemRow;
+  updated: Partial<DatabaseItemEditableFields>;
+  local_time: number;
+  onApprove: () => Promise<void>;
+  onReject: () => Promise<void>;
+};
 
-  for (const operation of queue) {
-    if (operation.type === "create" && onAdd) {
+type Props = {
+  onAdd?: (fields: DatabaseItemEditableFields) => Promise<void>;
+  onUpdate?: (
+    id: string,
+    fields: Partial<DatabaseItemEditableFields>
+  ) => Promise<void>;
+  onDelete?: (id: string) => Promise<void>;
+  onUpdateConflict?: (conflict: UpdateConflict | null) => Promise<void> | void;
+};
+
+type ApplyQueueProps = Props & { wrapper: PWASupabaseWrapper };
+
+const applyQueue = async ({
+  onAdd,
+  onUpdate,
+  onUpdateConflict,
+  wrapper,
+}: ApplyQueueProps) => {
+  const processNext = async () => {
+    const queue = [...getQueueFromStorage()].sort((a, b) => a.time - b.time);
+    if (queue.length === 0) return;
+
+    const [operation, ...rest] = queue;
+
+    const saveRest = () => {
+      updateQueueInStorage(rest);
+    };
+
+    if (operation.type === "create") {
+      if (!onAdd) return;
+
       try {
         await onAdd(operation.payload);
         toast.success(`Pushed new item "${operation.payload.title}" to remote`);
+        saveRest();
+        await processNext();
       } catch {
         toast.error(
           `Failed to push item "${operation.payload.title}" to remote`
         );
-        remaining.push(operation);
       }
-    } else {
-      remaining.push(operation);
-    }
-  }
 
-  updateQueueInStorage(remaining);
+      return;
+    }
+
+    if (operation.type === "update") {
+      if (!onUpdate) return;
+
+      try {
+        const response = await wrapper.db.items.getItem(operation.id);
+        if (!response || !response.data) throw new Error("Item not found");
+
+        const remoteItem: DatabaseItemRow = response.data;
+        const isOverwriteConflict =
+          new Date(remoteItem.updated_at).getTime() > operation.time;
+
+        if (!isOverwriteConflict) {
+          await onUpdate(operation.id, operation.payload);
+          toast.success(`Pushed update for item "${operation.id}" to remote`);
+          saveRest();
+          await processNext();
+          return;
+        }
+
+        if (!onUpdateConflict) {
+          toast.error(
+            `Conflict detected for item "${operation.id}". Update was not pushed.`
+          );
+          return;
+        }
+
+        await onUpdateConflict({
+          old: remoteItem,
+          updated: operation.payload,
+          local_time: operation.time,
+          onApprove: async () => {
+            const q = [...getQueueFromStorage()].sort(
+              (a, b) => a.time - b.time
+            );
+            const index = q.findIndex((op) => op.time === operation.time);
+            if (index === -1) {
+              await onUpdateConflict(null);
+              await processNext();
+              return;
+            }
+
+            const op = q[index] as LocalUpdateOperation;
+            await onUpdate(op.id, op.payload);
+            toast.success(
+              `Pushed update for item "${op.id}" to remote (resolved conflict)`
+            );
+            q.splice(index, 1);
+            updateQueueInStorage(q);
+            await onUpdateConflict(null);
+            await processNext();
+          },
+          onReject: async () => {
+            const q = [...getQueueFromStorage()].sort(
+              (a, b) => a.time - b.time
+            );
+            const index = q.findIndex((op) => op.time === operation.time);
+            if (index !== -1) {
+              q.splice(index, 1);
+              updateQueueInStorage(q);
+            }
+
+            await onUpdateConflict(null);
+            await processNext();
+          },
+        });
+      } catch {
+        toast.error(
+          `Failed to push update for item "${operation.payload.title}" to remote`
+        );
+      }
+
+      return;
+    }
+  };
+
+  await processNext();
 };
 
-export const useApplyOperationQueue = (handlers: Props) => {
+export const useApplyOperationQueue = (
+  handlers: Omit<Props, "onUpdateConflict">
+) => {
+  const { wrapper } = useSupabase();
   const isOnline = useOnlineStatus();
+  const [updateConflict, setUpdateConflict] = useState<UpdateConflict | null>(
+    null
+  );
+  const handlersRef = useRef(handlers);
+  const isProcessingRef = useRef(false);
 
   useEffect(() => {
-    if (!isOnline) return;
+    handlersRef.current = handlers;
+  }, [handlers]);
+
+  useEffect(() => {
+    if (!isOnline || !wrapper) return;
     if (getQueueFromStorage().length === 0) return;
 
-    applyQueue(handlers);
-  }, [isOnline, handlers]);
+    if (isProcessingRef.current) return;
+    isProcessingRef.current = true;
 
-  return null;
+    applyQueue({
+      ...handlersRef.current,
+      wrapper,
+      onUpdateConflict: (conflict) => {
+        setUpdateConflict(conflict);
+      },
+    }).finally(() => {
+      isProcessingRef.current = false;
+    });
+  }, [isOnline, wrapper]);
+
+  return { updateConflict };
 };
