@@ -2,6 +2,7 @@ import type { DatabaseItemEditableFields } from "pwa-supabase-wrapper/dist/compo
 import { useEffect } from "react";
 import { useOnlineStatus } from "./useOnlineStatus";
 import { toast } from "sonner";
+import { useSupabase } from "~/supabase/hooks";
 
 type LocalCreateOperation = {
   type: "create";
@@ -61,6 +62,8 @@ const updateQueueInStorage = (queue: LocalOperation[]) => {
 };
 
 export const useEditOperationQueue = () => {
+  const { wrapper, user } = useSupabase();
+
   const addCreate = (payload: DatabaseItemEditableFields) => {
     updateQueueInStorage([
       ...getQueueFromStorage(),
@@ -84,6 +87,22 @@ export const useEditOperationQueue = () => {
       { type: "delete", id, time: Date.now() },
     ]);
   };
+
+  useEffect(() => {
+    if (!wrapper) return;
+
+    const {
+      data: { subscription },
+    } = wrapper.getClient().auth.onAuthStateChange(async (event, session) => {
+      if (!session?.user && event !== "INITIAL_SESSION") {
+        updateQueueInStorage([]);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [wrapper, user]);
 
   return {
     create: addCreate,
