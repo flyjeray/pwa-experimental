@@ -1,4 +1,4 @@
-import { XIcon } from "lucide-react";
+import { XCircleIcon } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,8 +22,8 @@ export const ItemDeleteDialog = ({ id, onDelete }: Props) => {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="outline">
-          <XIcon />
+        <Button variant="outline" className="text-red-600 focus:ring-red-600">
+          <XCircleIcon />
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
@@ -38,7 +38,7 @@ export const ItemDeleteDialog = ({ id, onDelete }: Props) => {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={() => onDelete(id)}>
+          <AlertDialogAction variant="destructive" onClick={() => onDelete(id)}>
             Continue
           </AlertDialogAction>
         </AlertDialogFooter>

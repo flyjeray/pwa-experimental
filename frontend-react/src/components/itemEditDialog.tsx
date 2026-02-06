@@ -54,7 +54,7 @@ export const ItemEditDialog = ({ id, fields, onSave }: Props) => {
         <DialogHeader>
           <DialogTitle>Edit item {shortenID(id)}</DialogTitle>
           <DialogDescription>
-            Make changes to your profile here. Click save when you&apos;re done.
+            Make changes to your item here. Click save when you&apos;re done.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
