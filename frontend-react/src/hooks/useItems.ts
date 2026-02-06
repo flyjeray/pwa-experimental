@@ -6,6 +6,7 @@ import type {
   DatabaseItemEditableFields,
   DatabaseItemRow,
 } from "pwa-supabase-wrapper/dist/components/items";
+import { useEditOperationQueue } from "./useOperationQueue";
 
 const ITEMS_CACHE_KEY = "items-cache-v1";
 
@@ -55,6 +56,7 @@ const getItemsWithFallback = async (
 
 export const useItems = () => {
   const { wrapper, user } = useSupabase();
+  const queue = useEditOperationQueue();
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [items, setItems] = useState<DatabaseItemRow[]>(() =>
@@ -84,9 +86,27 @@ export const useItems = () => {
   };
 
   const addItem = async (fields: DatabaseItemEditableFields) => {
-    if (!wrapper) return;
+    if (!wrapper || !user) return;
 
-    const { error } = await wrapper.db.items.addItem(fields);
+    if (!isOnline) {
+      const tempId = `offline-${Date.now()}`;
+      const newItem: DatabaseItemRow = {
+        id: tempId,
+        ...fields,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        owner_id: user.id,
+      };
+      setItems((prev) => [newItem, ...prev]);
+      queue.create(newItem);
+      return;
+    }
+
+    const { error } = await wrapper.db.items.addItem({
+      title: fields.title,
+      description: fields.description,
+      is_completed: fields.is_completed,
+    });
 
     if (error) {
       console.error("Failed to add item:", error);
@@ -102,7 +122,26 @@ export const useItems = () => {
   ) => {
     if (!wrapper) return;
 
-    const { error } = await wrapper.db.items.updateItem(id, fields);
+    if (!isOnline) {
+      const updated = {
+        ...fields,
+        updated_at: new Date().toISOString(),
+      };
+      const index = items.findIndex((item) => item.id === id);
+      if (index === -1) return;
+
+      const newItems = [...items];
+      newItems[index] = { ...newItems[index], ...updated };
+      setItems(newItems);
+      queue.update(id, fields);
+      return;
+    }
+
+    const { error } = await wrapper.db.items.updateItem(id, {
+      title: fields.title,
+      description: fields.description,
+      is_completed: fields.is_completed,
+    });
 
     if (error) {
       console.error("Failed to update item:", error);
@@ -114,6 +153,17 @@ export const useItems = () => {
 
   const deleteItem = async (id: string) => {
     if (!wrapper) return;
+
+    if (!isOnline) {
+      const index = items.findIndex((item) => item.id === id);
+      if (index === -1) return;
+
+      const newItems = [...items];
+      newItems.splice(index, 1);
+      setItems(newItems);
+      queue.delete(id);
+      return;
+    }
 
     const { error } = await wrapper.db.items.deleteItem(id);
 

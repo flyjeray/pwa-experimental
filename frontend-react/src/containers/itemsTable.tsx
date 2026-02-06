@@ -14,10 +14,15 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { useItems } from "~/hooks/useItems";
+import { useApplyOperationQueue } from "~/hooks/useOperationQueue";
 import { shortenID } from "~/lib/shortenID";
 
 export const ItemsTable = () => {
   const { data, isLoading, add, update, delete: deleteItem } = useItems();
+
+  useApplyOperationQueue({
+    onAdd: add,
+  });
 
   const copyID = (id: string) => {
     navigator.clipboard
