@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import { SupabaseProvider } from "./supabase/wrapper.tsx";
+import { Toaster } from "~/components/ui/sonner.tsx";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -17,6 +18,7 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <SupabaseProvider>
       <App />
+      <Toaster position="top-right" />
     </SupabaseProvider>
   </StrictMode>
 );

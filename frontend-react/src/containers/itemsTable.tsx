@@ -1,6 +1,9 @@
+import { Copy } from "lucide-react";
+import { toast } from "sonner";
 import { ItemAddDialog } from "~/components/itemAddDialog";
 import { ItemDeleteDialog } from "~/components/itemDeleteDialog";
 import { ItemEditDialog } from "~/components/itemEditDialog";
+import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Skeleton } from "~/components/ui/skeleton";
 import {
@@ -15,6 +18,15 @@ import { shortenID } from "~/lib/shortenID";
 
 export const ItemsTable = () => {
   const { data, isLoading, add, update, delete: deleteItem } = useItems();
+
+  const copyID = (id: string) => {
+    navigator.clipboard
+      .writeText(id)
+      .then(() => toast.success("ID copied to clipboard"))
+      .catch((error) => {
+        console.error("Failed to copy ID to clipboard:", error);
+      });
+  };
 
   return (
     <div className={"flex flex-col gap-6"}>
@@ -60,8 +72,11 @@ export const ItemsTable = () => {
               {!isLoading &&
                 data.map((item) => (
                   <TableRow key={item.id}>
-                    <TableCell className="font-medium">
+                    <TableCell className="flex gap-2 items-center font-medium">
                       {shortenID(item.id)}
+                      <Button variant="outline" onClick={() => copyID(item.id)}>
+                        <Copy />
+                      </Button>
                     </TableCell>
                     <TableCell className="font-medium max-w-[200px] truncate">
                       {item.title}

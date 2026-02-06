@@ -11,7 +11,6 @@ import {
   AlertDialogTrigger,
 } from "~/components/ui/alert-dialog";
 import { Button } from "~/components/ui/button";
-import { shortenID } from "~/lib/shortenID";
 
 type Props = {
   id: string;
@@ -29,7 +28,7 @@ export const ItemDeleteDialog = ({ id, onDelete }: Props) => {
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            Are you sure you want to delete item {shortenID(id)}?
+            Are you sure you want to delete item {id}?
           </AlertDialogTitle>
           <AlertDialogDescription>
             This action cannot be undone. This will permanently delete your item
