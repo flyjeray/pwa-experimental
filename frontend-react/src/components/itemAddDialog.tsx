@@ -29,8 +29,8 @@ export const ItemAddDialog = ({ onSave }: Props) => {
     const form = event.currentTarget as HTMLFormElement;
     const formData = new FormData(form);
 
-    const title = (formData.get(`title-new`) ?? "") as string;
-    const description = (formData.get(`description-new`) ?? "") as string;
+    const title = formData.get(`title-new`) as string;
+    const description = formData.get(`description-new`) as string | null;
     const is_completed = (formData.get(`completed-checkbox-new`) ??
       false) as boolean;
 
@@ -53,7 +53,7 @@ export const ItemAddDialog = ({ onSave }: Props) => {
           <FieldGroup>
             <Field>
               <Label htmlFor={`title-new`}>Title</Label>
-              <Input id={`title-new`} name={`title-new`} />
+              <Input id={`title-new`} name={`title-new`} required />
             </Field>
             <Field>
               <Label htmlFor={`description-new`}>Description</Label>

@@ -35,8 +35,8 @@ export const ItemEditDialog = ({ id, fields, onSave }: Props) => {
     const form = event.currentTarget as HTMLFormElement;
     const formData = new FormData(form);
 
-    const title = (formData.get(`title-${id}`) ?? "") as string;
-    const description = (formData.get(`description-${id}`) ?? "") as string;
+    const title = formData.get(`title-${id}`) as string;
+    const description = formData.get(`description-${id}`) as string | null;
     const is_completed = (formData.get(`completed-checkbox-${id}`) ??
       false) as boolean;
 
@@ -65,6 +65,7 @@ export const ItemEditDialog = ({ id, fields, onSave }: Props) => {
                 id={`title-${id}`}
                 name={`title-${id}`}
                 defaultValue={fields.title}
+                required
               />
             </Field>
             <Field>
