@@ -1,3 +1,4 @@
+import { ItemAddDialog } from "~/components/itemAddDialog";
 import { ItemDeleteDialog } from "~/components/itemDeleteDialog";
 import { ItemEditDialog } from "~/components/itemEditDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -13,13 +14,14 @@ import { useItems } from "~/hooks/useItems";
 import { shortenID } from "~/lib/shortenID";
 
 export const ItemsTable = () => {
-  const { data, isLoading, update, delete: deleteItem } = useItems();
+  const { data, isLoading, add, update, delete: deleteItem } = useItems();
 
   return (
     <div className={"flex flex-col gap-6"}>
       <Card>
-        <CardHeader>
+        <CardHeader className="flex justify-between">
           <CardTitle>Your items</CardTitle>
+          <ItemAddDialog onSave={add} />
         </CardHeader>
 
         <CardContent>

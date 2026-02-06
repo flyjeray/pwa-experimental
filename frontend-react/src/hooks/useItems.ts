@@ -85,6 +85,19 @@ export const useItems = () => {
     }
   };
 
+  const addItem = async (fields: DatabaseItemEditableFields) => {
+    if (!wrapper) return;
+
+    const { error } = await wrapper.db.items.addItem(fields);
+
+    if (error) {
+      console.error("Failed to add item:", error);
+      throw error;
+    }
+
+    fetchItems();
+  };
+
   const updateItem = async (
     id: string,
     fields: Partial<DatabaseItemEditableFields>
@@ -140,6 +153,7 @@ export const useItems = () => {
     data: items,
     refetch: fetchItems,
     isLoading,
+    add: addItem,
     update: updateItem,
     delete: deleteItem,
   };

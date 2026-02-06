@@ -30,6 +30,10 @@ export class PWASupabaseItemsDB {
     return this.client.from("items").select("*").eq("id", id).single();
   }
 
+  async addItem(fields: DatabaseItemEditableFields) {
+    return this.client.from("items").insert({ ...fields });
+  }
+
   async updateItem(id: string, fields: Partial<DatabaseItemEditableFields>) {
     return this.client
       .from("items")
