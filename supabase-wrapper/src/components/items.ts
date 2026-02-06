@@ -36,4 +36,8 @@ export class PWASupabaseItemsDB {
       .update({ ...fields })
       .eq("id", id);
   }
+
+  async deleteItem(id: string) {
+    return this.client.from("items").delete().eq("id", id);
+  }
 }

@@ -101,6 +101,19 @@ export const useItems = () => {
     fetchItems();
   };
 
+  const deleteItem = async (id: string) => {
+    if (!wrapper) return;
+
+    const { error } = await wrapper.db.items.deleteItem(id);
+
+    if (error) {
+      console.error("Failed to delete item:", error);
+      throw error;
+    }
+
+    fetchItems();
+  };
+
   useEffect(() => {
     if (!wrapper) return;
 
@@ -128,5 +141,6 @@ export const useItems = () => {
     refetch: fetchItems,
     isLoading,
     update: updateItem,
+    delete: deleteItem,
   };
 };

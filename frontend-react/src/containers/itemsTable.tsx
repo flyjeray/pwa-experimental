@@ -1,3 +1,4 @@
+import { ItemDeleteDialog } from "~/components/itemDeleteDialog";
 import { ItemEditDialog } from "~/components/itemEditDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Skeleton } from "~/components/ui/skeleton";
@@ -12,7 +13,7 @@ import { useItems } from "~/hooks/useItems";
 import { shortenID } from "~/lib/shortenID";
 
 export const ItemsTable = () => {
-  const { data, isLoading, update } = useItems();
+  const { data, isLoading, update, delete: deleteItem } = useItems();
 
   return (
     <div className={"flex flex-col gap-6"}>
@@ -67,12 +68,13 @@ export const ItemsTable = () => {
                       {item.description || "-"}
                     </TableCell>
                     <TableCell>{item.is_completed ? "Yes" : "No"}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="flex justify-end gap-2 text-right">
                       <ItemEditDialog
                         id={item.id}
                         fields={item}
                         onSave={update}
                       />
+                      <ItemDeleteDialog id={item.id} onDelete={deleteItem} />
                     </TableCell>
                   </TableRow>
                 ))}
