@@ -1,3 +1,4 @@
+import { ItemEditDialog } from "~/components/itemEditDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Skeleton } from "~/components/ui/skeleton";
 import {
@@ -8,9 +9,10 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { useItems } from "~/hooks/useItems";
+import { shortenID } from "~/lib/shortenID";
 
 export const ItemsTable = () => {
-  const { data, isLoading } = useItems();
+  const { data, isLoading, update } = useItems();
 
   return (
     <div className={"flex flex-col gap-6"}>
@@ -24,9 +26,11 @@ export const ItemsTable = () => {
             <TableHeader>
               {(isLoading || (!isLoading && data.length > 0)) && (
                 <TableRow>
+                  <TableCell>ID</TableCell>
                   <TableCell>Title</TableCell>
                   <TableCell>Description</TableCell>
-                  <TableCell className="text-right">Completed</TableCell>
+                  <TableCell>Completed</TableCell>
+                  <TableCell className="text-right">Actions</TableCell>
                 </TableRow>
               )}
             </TableHeader>
@@ -38,10 +42,13 @@ export const ItemsTable = () => {
                     <TableCell className="font-medium">
                       <Skeleton className="h-4 w-24" />
                     </TableCell>
+                    <TableCell className="font-medium">
+                      <Skeleton className="h-4 w-24" />
+                    </TableCell>
                     <TableCell>
                       <Skeleton className="h-4 w-24" />
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell>
                       <Skeleton className="h-4 w-24" />
                     </TableCell>
                   </TableRow>
@@ -50,21 +57,29 @@ export const ItemsTable = () => {
               {!isLoading &&
                 data.map((item) => (
                   <TableRow key={item.id}>
+                    <TableCell className="font-medium">
+                      {shortenID(item.id)}
+                    </TableCell>
                     <TableCell className="font-medium max-w-[200px] truncate">
                       {item.title}
                     </TableCell>
                     <TableCell className="max-w-[280px] truncate">
                       {item.description || "-"}
                     </TableCell>
+                    <TableCell>{item.is_completed ? "Yes" : "No"}</TableCell>
                     <TableCell className="text-right">
-                      {item.is_completed ? "Yes" : "No"}
+                      <ItemEditDialog
+                        id={item.id}
+                        fields={item}
+                        onSave={update}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}
 
               {!isLoading && data.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center">
+                  <TableCell colSpan={4} className="text-center">
                     No items found.
                   </TableCell>
                 </TableRow>

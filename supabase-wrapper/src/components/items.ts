@@ -1,6 +1,13 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "pwa-supabase-types";
 
+export type DatabaseItemRow = Database["public"]["Tables"]["items"]["Row"];
+
+export type DatabaseItemEditableFields = Pick<
+  DatabaseItemRow,
+  "title" | "description" | "is_completed"
+>;
+
 export class PWASupabaseItemsDB {
   private client: SupabaseClient<Database>;
 
@@ -13,10 +20,20 @@ export class PWASupabaseItemsDB {
   }
 
   async getAllItems() {
-    return this.client.from("items").select("*");
+    return this.client
+      .from("items")
+      .select("*")
+      .order("created_at", { ascending: false });
   }
 
   async getItem(id: string) {
     return this.client.from("items").select("*").eq("id", id).single();
+  }
+
+  async updateItem(id: string, fields: Partial<DatabaseItemEditableFields>) {
+    return this.client
+      .from("items")
+      .update({ ...fields })
+      .eq("id", id);
   }
 }

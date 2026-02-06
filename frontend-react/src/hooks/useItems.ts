@@ -1,21 +1,22 @@
-import type { Database } from "pwa-supabase-types";
 import type { PWASupabaseWrapper } from "pwa-supabase-wrapper";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSupabase } from "~/supabase/hooks";
 import { useOnlineStatus } from "./useOnlineStatus";
-
-type ItemRow = Database["public"]["Tables"]["items"]["Row"];
+import type {
+  DatabaseItemEditableFields,
+  DatabaseItemRow,
+} from "pwa-supabase-wrapper/dist/components/items";
 
 const ITEMS_CACHE_KEY = "items-cache-v1";
 
-const loadCachedItems = (): ItemRow[] => {
+const loadCachedItems = (): DatabaseItemRow[] => {
   if (typeof window === "undefined") return [];
 
   try {
     const raw = window.localStorage.getItem(ITEMS_CACHE_KEY);
     if (!raw) return [];
 
-    const parsed = JSON.parse(raw) as ItemRow[];
+    const parsed = JSON.parse(raw) as DatabaseItemRow[];
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
@@ -24,7 +25,7 @@ const loadCachedItems = (): ItemRow[] => {
 
 const getItemsFromNetwork = async (
   wrapper: PWASupabaseWrapper
-): Promise<ItemRow[]> => {
+): Promise<DatabaseItemRow[]> => {
   const { data, error } = await wrapper.db.items.getAllItems();
 
   if (error) {
@@ -39,7 +40,7 @@ const getItemsFromNetwork = async (
 const getItemsWithFallback = async (
   wrapper: PWASupabaseWrapper,
   isOnline: boolean
-): Promise<{ items: ItemRow[]; error: unknown | null }> => {
+): Promise<{ items: DatabaseItemRow[]; error: unknown | null }> => {
   if (!isOnline) {
     return { items: loadCachedItems(), error: null };
   }
@@ -56,8 +57,11 @@ export const useItems = () => {
   const { wrapper, user } = useSupabase();
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [items, setItems] = useState<ItemRow[]>(() => loadCachedItems());
+  const [items, setItems] = useState<DatabaseItemRow[]>(() =>
+    loadCachedItems()
+  );
   const isOnline = useOnlineStatus();
+  const hasInitializedRef = useRef(false);
 
   const fetchItems = async () => {
     if (!user) return;
@@ -74,10 +78,27 @@ export const useItems = () => {
     );
     setItems(nextItems);
     setIsLoading(false);
+    hasInitializedRef.current = true;
 
     if (error) {
       throw error;
     }
+  };
+
+  const updateItem = async (
+    id: string,
+    fields: Partial<DatabaseItemEditableFields>
+  ) => {
+    if (!wrapper) return;
+
+    const { error } = await wrapper.db.items.updateItem(id, fields);
+
+    if (error) {
+      console.error("Failed to update item:", error);
+      throw error;
+    }
+
+    fetchItems();
   };
 
   useEffect(() => {
@@ -98,8 +119,14 @@ export const useItems = () => {
   }, [wrapper, user]);
 
   useEffect(() => {
+    if (hasInitializedRef.current) return;
     fetchItems();
-  }, [wrapper, user, isOnline]);
+  }, [wrapper?.db, user?.email, isOnline]);
 
-  return { data: items, refetch: fetchItems, isLoading };
+  return {
+    data: items,
+    refetch: fetchItems,
+    isLoading,
+    update: updateItem,
+  };
 };
