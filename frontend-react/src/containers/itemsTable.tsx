@@ -13,17 +13,40 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
-import { UpdateConflictDialog } from "~/components/updateConflictDialog";
+import { UpdateConflictDialog } from "~/components/conflicts/update/dialog";
+import { ItemDeletedConflictDialog } from "~/components/conflicts/writeOverDeleted/dialog";
+import { ItemDeleteConflictDialog } from "~/components/conflicts/deleteUpdated/dialog";
 import { useItems } from "~/hooks/useItems";
 import { useApplyOperationQueue } from "~/hooks/useOperationQueue";
 import { shortenID } from "~/lib/shortenID";
+import { useState } from "react";
 
 export const ItemsTable = () => {
-  const { data, isLoading, add, update, delete: deleteItem } = useItems();
+  const {
+    data,
+    isLoading,
+    add,
+    update,
+    delete: deleteItem,
+    refetch,
+  } = useItems();
 
-  const { updateConflict } = useApplyOperationQueue({
+  const [isQueueProcessing, setIsQueueProcessing] = useState(false);
+
+  const { conflicts } = useApplyOperationQueue({
     onAdd: add,
     onUpdate: update,
+    onDelete: deleteItem,
+
+    onQueueStart: () => {
+      toast.loading("Syncing changes with server...");
+      setIsQueueProcessing(true);
+    },
+    onQueueEnd: () => {
+      toast.success("Finished syncing changes");
+      setIsQueueProcessing(false);
+      refetch();
+    },
   });
 
   const copyID = (id: string) => {
@@ -37,7 +60,15 @@ export const ItemsTable = () => {
 
   return (
     <div className={"flex flex-col gap-6"}>
-      {updateConflict && <UpdateConflictDialog conflict={updateConflict} />}
+      {conflicts.overwrite && (
+        <UpdateConflictDialog conflict={conflicts.overwrite} />
+      )}
+      {conflicts.writeOverDeleted && (
+        <ItemDeletedConflictDialog conflict={conflicts.writeOverDeleted} />
+      )}
+      {conflicts.deletedUpdated && (
+        <ItemDeleteConflictDialog conflict={conflicts.deletedUpdated} />
+      )}
 
       <Card>
         <CardHeader className="flex justify-between">
@@ -60,7 +91,7 @@ export const ItemsTable = () => {
             </TableHeader>
 
             <TableBody>
-              {isLoading &&
+              {(isQueueProcessing || isLoading) &&
                 Array.from({ length: 2 }).map((_, index) => (
                   <TableRow key={`loader-${index}`}>
                     <TableCell className="font-medium">
@@ -78,7 +109,7 @@ export const ItemsTable = () => {
                   </TableRow>
                 ))}
 
-              {!isLoading &&
+              {!(isQueueProcessing || isLoading) &&
                 data.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className="flex gap-2 items-center font-medium">
@@ -105,7 +136,7 @@ export const ItemsTable = () => {
                   </TableRow>
                 ))}
 
-              {!isLoading && data.length === 0 && (
+              {!(isQueueProcessing || isLoading) && data.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center">
                     No items found.

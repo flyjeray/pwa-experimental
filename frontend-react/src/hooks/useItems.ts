@@ -85,7 +85,10 @@ export const useItems = () => {
     }
   };
 
-  const addItem = async (fields: DatabaseItemEditableFields) => {
+  const addItem = async (
+    fields: DatabaseItemEditableFields,
+    doNotRefetch?: boolean
+  ) => {
     if (!wrapper || !user) return;
 
     if (!isOnline) {
@@ -98,7 +101,11 @@ export const useItems = () => {
         owner_id: user.id,
       };
       setItems((prev) => [newItem, ...prev]);
-      queue.create(newItem);
+      queue.create({
+        title: fields.title,
+        description: fields.description,
+        is_completed: fields.is_completed,
+      });
       return;
     }
 
@@ -113,12 +120,13 @@ export const useItems = () => {
       throw error;
     }
 
-    fetchItems();
+    if (!doNotRefetch) fetchItems();
   };
 
   const updateItem = async (
     id: string,
-    fields: Partial<DatabaseItemEditableFields>
+    fields: Partial<DatabaseItemEditableFields>,
+    doNotRefetch?: boolean
   ) => {
     if (!wrapper) return;
 
@@ -133,7 +141,12 @@ export const useItems = () => {
       const newItems = [...items];
       newItems[index] = { ...newItems[index], ...updated };
       setItems(newItems);
-      queue.update(id, fields);
+      const editable: DatabaseItemEditableFields = {
+        title: newItems[index].title,
+        description: newItems[index].description,
+        is_completed: newItems[index].is_completed,
+      };
+      queue.update(id, editable);
       return;
     }
 
@@ -148,10 +161,10 @@ export const useItems = () => {
       throw error;
     }
 
-    fetchItems();
+    if (!doNotRefetch) fetchItems();
   };
 
-  const deleteItem = async (id: string) => {
+  const deleteItem = async (id: string, doNotRefetch?: boolean) => {
     if (!wrapper) return;
 
     if (!isOnline) {
@@ -172,7 +185,7 @@ export const useItems = () => {
       throw error;
     }
 
-    fetchItems();
+    if (!doNotRefetch) fetchItems();
   };
 
   useEffect(() => {
