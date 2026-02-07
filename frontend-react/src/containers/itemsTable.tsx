@@ -1,8 +1,8 @@
 import { Copy } from "lucide-react";
 import { toast } from "sonner";
-import { ItemAddDialog } from "~/components/itemAddDialog";
-import { ItemDeleteDialog } from "~/components/itemDeleteDialog";
-import { ItemEditDialog } from "~/components/itemEditDialog";
+import { ItemAddDialog } from "~/components/itemActionDialogs/add";
+import { ItemDeleteDialog } from "~/components/itemActionDialogs/delete";
+import { ItemEditDialog } from "~/components/itemActionDialogs/edit";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Skeleton } from "~/components/ui/skeleton";
