@@ -10,7 +10,7 @@
     "build:wrapper": "npm run build --workspace=supabase-wrapper",
     "build:frontend": "npm run build --workspace=frontend-react",
     "dev": "npm run build:wrapper && npm run dev --workspace=frontend-react",
-    "preview": "npm run build:wrapper && npm run preview --workspace=frontend-react",
+    "preview": "npm run build && npm run preview --workspace=frontend-react",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "clean": "npm run clean --workspaces --if-present && rm -rf node_modules",
