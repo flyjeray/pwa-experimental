@@ -74,33 +74,89 @@ pwa-experimental/
 
 ## Offline Sync & Conflict Resolution
 
-The core offline behavior is implemented through a client-side operation queue stored locally and applied when the app is online and authenticated.
+The core offline behavior is implemented through a client-side operation queue stored in `localStorage` and applied when the app is online and authenticated.
 
-### Operation Queue
+### What Gets Queued
 
-The `useEditOperationQueue` hook in the frontend is responsible for queuing mutations while keeping the UI responsive:
+The `useEditOperationQueue` hook exposes three methods used by `useItems`:
 
-- `create(payload)`: Queue a new item creation
-- `update(id, payload)`: Queue an item update, collapsing multiple pending updates for the same item into the latest one
-- `delete(id)`: Queue an item deletion
+- `create(payload)`: Queue a new item creation.
+- `update(id, payload)`: Queue an item update.
+- `delete(id)`: Queue an item deletion.
 
-Queued operations include timestamps and are persisted via a small storage helper so they survive page reloads.
+Each queued entry is a small JSON object:
 
-When the auth state changes to "logged out" (except the initial session detection), the queue is cleared to avoid leaking operations across users.
+- `type`: `"create" | "update" | "delete"`
+- `payload` (for create/update): Editable fields of the item
+- `id` (for update/delete): Target item ID
+- `time`: Millisecond timestamp used to order operations and detect conflicts
 
-### Applying the Queue
+The queue is stored under a single `localStorage` key and is read back on every app load. When the auth state changes to "logged out" (except the initial session detection), the queue is cleared to avoid leaking operations across users.
 
-The `useApplyOperationQueue` hook coordinates applying queued operations when possible:
+On the UI side, `useItems` performs an optimistic update when offline:
 
-- Watches network connectivity and Supabase wrapper initialization
-- If the app is online, a wrapper exists, and the queue is non-empty, it triggers `applyQueue`
-- Ensures only one queue processing run is active at a time
-- Surfaces conflicts through a `conflicts` object with three categories:
-  - Overwrite conflicts (local update vs newer remote data)
-  - Write-over-deleted conflicts (updating something that was deleted remotely)
-  - Delete-updated conflicts (deleting something that changed remotely)
+- For **create**, it inserts a temporary item into state with an `offline-<timestamp>` ID and pushes a `create` operation into the queue.
+- For **update**, it applies changes to the in-memory item list, then queues an `update` operation with a full editable snapshot.
+- For **delete**, it removes the item from local state and queues a `delete` operation.
 
-Dedicated conflict dialog and table components under `src/components/conflicts/` drive the UX for reviewing and resolving these cases.
+This means the user always sees their changes immediately, even before the server has confirmed them.
+
+### How the Queue Is Applied
+
+The `useApplyOperationQueue` hook coordinates pushing the queue to Supabase whenever possible. It:
+
+- Watches network connectivity and Supabase wrapper initialization.
+- Checks the queue; if there is at least one entry and the app is online, it calls `applyQueue`.
+- Makes sure only one processing run is active at a time to avoid race conditions.
+
+`applyQueue` processes operations as follows:
+
+1. Reads the current queue from `localStorage` and sorts it by `time` ascending.
+2. Takes the oldest operation and decides how to push it:
+   - **Create**
+     - Calls the `onAdd` handler to insert a new row in Supabase.
+     - On success, shows a success toast and removes the operation from the queue.
+   - **Update**
+     - Fetches the latest remote item by ID.
+     - If the item does **not exist** remotely (deleted elsewhere), it raises a **write-over-deleted** conflict.
+     - If the item **exists**, it compares `remote.updated_at` with the queued `time`:
+       - If remote is **older** than the queued update, it pushes the update and removes it from the queue.
+       - If remote is **newer**, it raises an **overwrite** conflict.
+   - **Delete**
+     - Fetches the latest remote item by ID.
+     - If the item is already gone remotely, it simply drops the local delete from the queue.
+     - If the item exists, it compares `remote.updated_at` with the queued `time`:
+       - If remote is **not newer**, it pushes the delete.
+       - If remote is **newer**, it raises a **delete-updated** conflict.
+3. After handling the operation (either pushing or resolving/discarding), it saves the remaining queue back to `localStorage` and moves on to the next entry.
+
+Throughout this process, short toast messages are used to communicate success and failure of remote operations.
+
+### Conflict Types & Resolution Flow
+
+Conflicts are surfaced via a `conflicts` object returned from `useApplyOperationQueue`, which is then wired into dedicated dialogs/tables under `src/components/conflicts/`.
+
+There are three conflict types:
+
+- **Overwrite conflict**
+  - Situation: Local update vs newer remote update.
+  - Options:
+    - **Approve**: Overwrite remote with local version. The helper re-runs the queued update, shows a success toast, removes it from the queue, and continues processing.
+    - **Reject**: Keep remote version. The queued update is discarded.
+
+- **Write-over-deleted conflict**
+  - Situation: Item was deleted remotely, but a local update exists in the queue.
+  - Options:
+    - **Approve**: Recreate the item on the server using the queued local payload.
+    - **Reject**: Drop the queued update and do nothing remotely.
+
+- **Delete-updated conflict**
+  - Situation: A delete is queued, but the remote item has been updated since the delete was queued.
+  - Options:
+    - **Approve**: Force the delete even though the item was changed elsewhere.
+    - **Reject**: Keep the updated remote item and drop the queued delete.
+
+Each conflict handler encapsulates the same pattern: find the queued operation by timestamp, perform or drop it, optionally show a toast, update the queue, reset the conflict state, and resume processing the rest of the queue.
 
 ### System & Offline UI
 
