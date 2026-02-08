@@ -4,6 +4,12 @@ An experimental progressive web app (PWA) exploring offline-first data and Supab
 
 > **Note:** This project was created as a learning exercise to explore offline capabilities, sync, and conflict resolution patterns. While functional, it is not intended for production use without further hardening.
 
+## Register flow
+
+Currently blocked by Supabase restrictions: GitHub Pages (`*.github.io`) cannot be used as the Site URL, so post-registration redirects do not work correctly on the deployed GH Pages build.
+
+Despite this, the user **is successfully verified** and can continue using the application normally.
+
 ## 📋 Table of Contents
 
 - [Overview](#overview)
