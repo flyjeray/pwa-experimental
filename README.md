@@ -4,15 +4,6 @@ An experimental progressive web app (PWA) exploring offline-first data and Supab
 
 > **Note:** This project was created as a learning exercise to explore offline capabilities, sync, and conflict resolution patterns. While functional, it is not intended for production use without further hardening.
 
-## Demo access
-
-This project does not currently include a registration flow.
-
-To explore the app:
-
-- use the pre-seeded demo account (provided by request)
-- or connect your own Supabase project (see setup)
-
 ## 📋 Table of Contents
 
 - [Overview](#overview)

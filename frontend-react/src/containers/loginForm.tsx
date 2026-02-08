@@ -6,9 +6,9 @@ import { Input } from "~/components/ui/input";
 import { useAuth } from "~/hooks/useAuth";
 
 export const LoginForm = () => {
-  const { login } = useAuth();
+  const { login, register } = useAuth();
 
-  const handleSubmit: SubmitEventHandler<HTMLFormElement> = async (event) => {
+  const handleLogin: SubmitEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault();
 
     const form = event.currentTarget as HTMLFormElement;
@@ -20,6 +20,29 @@ export const LoginForm = () => {
     await login(email, password);
   };
 
+  const handleRegister: SubmitEventHandler<HTMLFormElement> = async (event) => {
+    event.preventDefault();
+
+    const form = event.currentTarget as HTMLFormElement;
+    const formData = new FormData(form);
+
+    const email = (formData.get("email") ?? "") as string;
+    const password = (formData.get("password") ?? "") as string;
+
+    await register(email, password);
+  };
+
+  const onSubmit: SubmitEventHandler<HTMLFormElement> = (event) => {
+    const submitter = event.nativeEvent.submitter as HTMLButtonElement;
+    if (submitter.value === "signin") {
+      return handleLogin(event);
+    } else if (submitter.value === "signup") {
+      return handleRegister(event);
+    } else {
+      console.warn("Unknown submitter:", submitter);
+    }
+  };
+
   return (
     <div className={"flex flex-col gap-6"}>
       <Card>
@@ -27,7 +50,7 @@ export const LoginForm = () => {
           <CardTitle>Login to your account</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={onSubmit}>
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
@@ -46,7 +69,12 @@ export const LoginForm = () => {
                 <Input id="password" name="password" type="password" required />
               </Field>
               <Field>
-                <Button type="submit">Login</Button>
+                <Button type="submit" value="signin">
+                  Login
+                </Button>
+                <Button type="submit" value="signup" variant="outline">
+                  Register
+                </Button>
               </Field>
             </FieldGroup>
           </form>
