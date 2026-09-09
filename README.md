@@ -4,7 +4,13 @@ An experimental progressive web app (PWA) exploring offline-first data and Supab
 
 > **Note:** This project was created as a learning exercise to explore offline capabilities, sync, and conflict resolution patterns. While functional, it is not intended for production use without further hardening.
 
-## Register flow
+## The Problem
+
+Most apps require a live internet connection to work. This app explores how to keep a CRUD app usable while offline by queueing mutations on the client and reconciling them with Supabase once connectivity returns, so users can keep creating, updating, and deleting items without waiting on the network — and the app has to reason honestly about what happens when the same data changed on both sides in the meantime.
+
+## Known Issues
+
+### Register flow redirect on GitHub Pages
 
 Currently blocked by Supabase restrictions: GitHub Pages (`*.github.io`) cannot be used as the Site URL, so post-registration redirects do not work correctly on the deployed GH Pages build.
 
